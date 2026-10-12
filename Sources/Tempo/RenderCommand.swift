@@ -20,7 +20,7 @@ enum RenderCommand {
 
         func shot(_ name: String, _ page: PanelState.Page) {
             state.page = page
-            let renderer = ImageRenderer(content: PanelRoot(state: state, model: model, actions: actions))
+            let renderer = ImageRenderer(content: PanelRoot(state: state, model: model, notch: NotchOwnership(appName: "Tempo"), actions: actions))
             renderer.scale = 2
             guard let image = renderer.nsImage, let tiff = image.tiffRepresentation,
                   let png = NSBitmapImageRep(data: tiff)?.representation(using: .png, properties: [:]) else { return }

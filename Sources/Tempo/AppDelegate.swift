@@ -1,4 +1,5 @@
 import AppKit
+import NimbiKit
 import TempoCore
 
 /// Wires the pieces: the timer model, the menu bar glyph, the panel, the hot key and About.
@@ -9,11 +10,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var panel: Panel!
     private var hotkey: Hotkey?
     private let about = AboutWindow()
+    private var notch: NotchOwnership!
+    private var island: TempoIsland!
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         LookSettings.load()
+        notch = NotchOwnership(appName: "Tempo")
         item = MenuBarItem(model: model)
-        panel = Panel(model: model, item: item)
+        panel = Panel(model: model, item: item, notch: notch)
+        island = TempoIsland(model: model, ownership: notch)
+        island.onOpenPanel = { [weak self] in self?.panel.openFromIsland() }
+        // One Tempo on screen at a time: the island replaces the menu bar glyph while it's shown.
+        island.island.onShown = { [weak self] shown in self?.item.statusItem.isVisible = !shown }
+        panel.island = island.island
         panel.onAbout = { [weak self] in self?.about.show() }
         item.onClick = { [weak self] in self?.panel.toggle() }
         item.menu = { [weak self] in self?.shortMenu() ?? NSMenu() }

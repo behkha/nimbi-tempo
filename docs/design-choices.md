@@ -23,8 +23,21 @@ artifact <https://claude.ai/artifact/FJkxvUfx7uSzoyWaMRGqLY> (owner only; a copy
 - **DESIGN.md** gained the lines these choices need: 3.5 (Tempo's cloud may take its tool's shape),
   10 (ambience the user turns on is not a notification) and 11.2 (Tempo's prop).
 
+## The notch island (12 Oct 2026)
+
+Options in the private artifact <https://claude.ai/artifact/6V8mn969Eu5hEo5aXRhRbW> (copy in
+[`island-options.html`](island-options.html)); both recommended options were chosen.
+
+| Decision | Chosen | Not chosen |
+|---|---|---|
+| Open island | **A · A ring on the right.** Cloud at 92 pt in its tool, TEMPO, a title ("Focus · 18 min left"), a subtitle (the task and end time), two actions, and 18.4's `ring` detail block with the minutes in it and "2 of 4" under it. The page format is unchanged, so it carries over to the shared island in phase 2. | B · the cloud inside its ring, big digits for the title (not in the page format). C · rows. |
+| Closed island | **A · Cloud and minutes.** The cloud at 24 pt in its current tool, "18′" (seconds in the last minute), an amber dot when time is up. Same as the menu bar item. | B · cloud in a ring. C · a small ring with no digits. |
+
+Phase 1 of 18.2, like Skyline's: Tempo never takes the notch on its own; **Use for Tempo** in settings
+does, and **Give it to Relay** gives it back. The island window, its hover timing and the panel hanging
+from it moved from Skyline into NimbiKit 0.6.0 (`NotchOwnership`, `NotchIsland`), so Tempo uses them
+instead of copying. The page's words come from `IslandPage` in TempoCore, which is tested.
+
 ## Not built yet
 
-- The notch island page (DESIGN.md 18.4: glance "18′", detail `ring`). Until the shared island exists,
-  Tempo never claims the notch; settings name the owner and say Tempo stays in the menu bar (18.2).
 - Notifications when the panel is closed and sounds are off. The amber dot and the cloud's mood carry it.

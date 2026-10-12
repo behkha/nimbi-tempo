@@ -37,7 +37,8 @@ final class TempoModel: ObservableObject {
     private let store = SessionStore.standard
     private var ticker: Timer?
     private var wake: NSObjectProtocol?
-    /// A made-up state for checking the look (`TEMPO_DEMO`): nothing is saved.
+    /// A made-up state for checking the look (`TEMPO_DEMO`), or minutes squeezed into seconds
+    /// (`TEMPO_FAST`): nothing is saved, so the real log and timer stay untouched.
     private let demo: Bool
 
     private enum Keys {
@@ -50,14 +51,14 @@ final class TempoModel: ObservableObject {
         // TEMPO_FAST=2 makes a minute last two seconds, to watch a whole cycle quickly.
         let minute = env["TEMPO_FAST"].flatMap(Double.init).map { max(0.5, $0) } ?? 60
         var clock = PomodoroClock(settings: settings, secondsPerMinute: minute)
-        if let saved = Saved.load(ClockSnapshot.self, Keys.clock) {
+        if minute == 60, let saved = Saved.load(ClockSnapshot.self, Keys.clock) {
             clock = PomodoroClock(settings: settings, state: saved.state, streak: saved.streak, secondsPerMinute: minute)
         }
         self.settings = settings
         self.sounds = Saved.load(SoundSettings.self, Keys.sounds) ?? SoundSettings()
         self.task = UserDefaults.standard.string(forKey: Keys.task) ?? ""
         self.log = store.load()
-        self.demo = Demo.state != nil
+        self.demo = Demo.state != nil || minute != 60
         if let state = Demo.state {
             clock = PomodoroClock(settings: settings, state: state.state(at: Date(), settings: settings), streak: 2)
             task = "Writing the release notes"

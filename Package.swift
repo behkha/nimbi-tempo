@@ -10,7 +10,7 @@ let package = Package(
     dependencies: [
         // nimbi's shared cloud, tokens and components. To work on both at once, swap in
         // .package(path: "../nimbi-kit") with a checkout next to this repo.
-        .package(url: "https://github.com/behkha/nimbi-kit.git", from: "0.5.0")
+        .package(path: "../nimbi-kit")
     ],
     targets: [
         // Everything that isn't a view: the timer, the session log, sounds as settings, moods.

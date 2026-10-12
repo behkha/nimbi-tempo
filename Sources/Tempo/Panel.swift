@@ -10,6 +10,10 @@ final class PanelState: ObservableObject {
     @Published var page = Page.timer
     /// T: the task line is a text field while this is on.
     @Published var editingTask = false
+    /// Hanging flush from the notch island (DESIGN.md 18.9) rather than from the menu bar glyph.
+    @Published var hanging = false
+    /// While hanging: at least as wide as the island, so the two read as one piece.
+    @Published var minWidth: CGFloat = 0
 }
 
 /// What the panel's pages can ask for.
@@ -53,12 +57,14 @@ final class Panel: NSObject, NSWindowDelegate {
     private let state = PanelState()
     private let model: TempoModel
     private let item: MenuBarItem
+    /// Set when Tempo owns the notch; the panel can then hang from the island.
+    weak var island: NotchIsland?
     private var host: SizeReportingHostingView<AnyView>!
     private var keyMonitor: Any?
     private var closedAt = Date.distantPast
     var onAbout: (() -> Void)?
 
-    init(model: TempoModel, item: MenuBarItem) {
+    init(model: TempoModel, item: MenuBarItem, notch: NotchOwnership) {
         self.model = model
         self.item = item
         super.init()
@@ -74,7 +80,7 @@ final class Panel: NSObject, NSWindowDelegate {
             back: { [weak self] in self?.back() },
             about: { [weak self] in self?.close(); self?.onAbout?() }
         )
-        host = SizeReportingHostingView(rootView: AnyView(PanelRoot(state: state, model: model, actions: actions)))
+        host = SizeReportingHostingView(rootView: AnyView(PanelRoot(state: state, model: model, notch: notch, actions: actions)))
         host.onFittingSizeChange = { [weak self] in self?.place() }
         window.contentView = host
     }
@@ -89,6 +95,7 @@ final class Panel: NSObject, NSWindowDelegate {
     }
 
     func open(_ page: PanelState.Page) {
+        hang(false)
         state.page = page
         place()
         window.makeKeyAndOrderFront(nil)
@@ -107,6 +114,18 @@ final class Panel: NSObject, NSWindowDelegate {
         window.orderFrontRegardless()
     }
 
+    /// Opens under the notch island, flush with it.
+    func openFromIsland() {
+        guard let island, island.isShown else { open(.timer); return }
+        if isOpen { item.highlight(false) }
+        hang(true)
+        state.minWidth = island.closedWidth
+        state.page = .timer
+        place()
+        window.makeKeyAndOrderFront(nil)
+        startKeys()
+    }
+
     func close() {
         guard isOpen else { return }
         endEditing()
@@ -115,6 +134,15 @@ final class Panel: NSObject, NSWindowDelegate {
         stopKeys()
         closedAt = Date()
         state.page = .timer
+        hang(false)
+    }
+
+    private func hang(_ on: Bool) {
+        guard state.hanging != on else { return }
+        state.hanging = on
+        // PanelBackground turns into the island's flat-topped black body at the notch.
+        NimbiAppearance.shared.dock = on ? .notch : .right
+        if !on { island?.detach() }
     }
 
     private func show(_ page: PanelState.Page) {
@@ -139,6 +167,14 @@ final class Panel: NSObject, NSWindowDelegate {
     /// Hangs the panel from the glyph: centred under it, kept on screen, top fixed as the
     /// content grows or shrinks.
     private func place() {
+        if state.hanging, let island, let hang = island.hangPoint {
+            let size = host.fittingSize
+            let inset: CGFloat = 16
+            island.attach(width: size.width - 2 * inset)
+            window.setFrame(NSRect(x: (hang.x - size.width / 2).rounded(), y: (hang.y + inset - size.height).rounded(),
+                                   width: size.width, height: size.height), display: true)
+            return
+        }
         guard let button = item.buttonFrame else { return }
         let screen = NSScreen.screens.first { $0.frame.intersects(button) } ?? NSScreen.main
         let size = host.fittingSize
@@ -210,22 +246,30 @@ final class Panel: NSObject, NSWindowDelegate {
 struct PanelRoot: View {
     @ObservedObject var state: PanelState
     var model: TempoModel
+    var notch: NotchOwnership
     var actions: PanelActions
     @ObservedObject private var look = NimbiAppearance.shared
 
     var body: some View {
         page
+            .frame(minWidth: state.hanging ? state.minWidth : nil)
             .background(PanelBackground(cornerRadius: Nimbi.Radius.panel))
-            .clipShape(RoundedRectangle(cornerRadius: Nimbi.Radius.panel, style: .continuous))
+            .clipShape(clip)
             .floatingPanelShadow()
+            .environment(\.hangsFromPill, state.hanging)
             .environment(\.colorScheme, .dark)
             .fixedSize()
+    }
+
+    private var clip: AnyShape {
+        state.hanging ? AnyShape(IslandBody(radius: Nimbi.Radius.panel + 4))
+            : AnyShape(RoundedRectangle(cornerRadius: Nimbi.Radius.panel, style: .continuous))
     }
 
     @ViewBuilder private var page: some View {
         switch state.page {
         case .timer: TimerView(model: model, panel: state, actions: actions)
-        case .settings: SettingsView(model: model, actions: actions)
+        case .settings: SettingsView(model: model, notch: notch, actions: actions)
         case .sounds: SoundsView(model: model, actions: actions)
         }
     }

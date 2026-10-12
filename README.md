@@ -31,8 +31,14 @@ every nimbi app. The choices behind it are in [docs/design-choices.md](docs/desi
   one to hear the next. There's a volume and one switch for all of them. **While you focus**, Tempo
   can play soft rain, a distant storm, wind or brown noise. It's made in the app from noise, fades in
   when focus starts and out at the break, and is off by default.
-- **The notch** is shared by every nimbi app (DESIGN.md 18.2). Tempo has no island page yet, so it
-  never takes the notch. Settings say who has it, and Tempo stays in the menu bar.
+- **The notch** is shared by every nimbi app (DESIGN.md 18.2). Tempo never takes it on its own.
+  **Use for Tempo** in settings moves Tempo there. Closed, the island shows the cloud in its current
+  tool and the minutes ("18′"), with an amber dot when time is up. Hover it, or click it, and it opens
+  into the page. The page shows the cloud, a title like "Focus · 18 min left", the task and end time,
+  **Pause** (space) and **Timer** (↩), and a ring with the minutes. When time is up, **Start break**
+  ↩ turns white, and **Skip** (S) sits next to it. **Timer** hangs Tempo's panel from the island, and
+  the menu bar glyph steps aside meanwhile. **Give it to Relay** hands the notch back. Either app's
+  switch works live.
 - The timer keeps absolute times, so a sleeping Mac or a relaunch never loses it. A phase that ended
   while the Mac slept counts at its real end.
 - Finished sessions are kept for 60 days in `~/Library/Application Support/Tempo/sessions.json`. Only
@@ -84,4 +90,4 @@ Run the tests outside Claude Code's command sandbox: the Testing macro plugin ca
   cloud morph. Add `TEMPO_DEMO_SHOW=1` to open the panel on its own.
 - `TEMPO_DEMO=focus build/Tempo.app/Contents/MacOS/Tempo --render <dir>` draws the panel's pages to
   PNGs. AppKit-backed bits (switches) don't render this way.
-- `TEMPO_FAST=1` makes a minute last one second, so a real cycle goes by quickly.
+- `TEMPO_FAST=1` makes a minute last one second, so a real cycle goes by quickly. Like the demos, it saves nothing: no sessions in the log, no timer state.

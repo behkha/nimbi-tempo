@@ -7,9 +7,9 @@ import TempoCore
 /// `,`: the settings menu (DESIGN.md 8): header, grouped rows in wells, then plain rows.
 struct SettingsView: View {
     @ObservedObject var model: TempoModel
+    @ObservedObject var notch: NotchOwnership
     var actions: PanelActions
     @ObservedObject private var look = NimbiAppearance.shared
-    @ViewState private var notchOwner = SurfaceClaim.owner(of: .notch)
     @ViewState private var loginError = false
 
     var body: some View {
@@ -60,19 +60,34 @@ struct SettingsView: View {
                     .allowsHitTesting(false)
             }
 
-            // DESIGN.md 18.2: no island yet, so Tempo never claims the notch; it says who has it.
-            VStack(alignment: .leading, spacing: 3) {
+            // DESIGN.md 18.2: Tempo never takes the notch on its own; one click here does.
+            VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 8) {
                     Image(systemName: "rectangle.topthird.inset.filled")
                         .foregroundStyle(Nimbi.Text.dim)
                         .frame(width: 18)
-                    Text(notchLine).foregroundStyle(Nimbi.Text.strong)
+                    Text(notch.line)
+                        .foregroundStyle(Nimbi.Text.strong)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 .font(look.font(12))
-                Text("Tempo stays in the menu bar.")
-                    .font(look.font(10.5))
-                    .foregroundStyle(Nimbi.Text.dim)
-                    .padding(.leading, 26)
+                HStack(spacing: 8) {
+                    Text(notch.ownedByMe ? "Hover it to see the timer." : "Tempo stays in the menu bar.")
+                        .font(look.font(10.5))
+                        .foregroundStyle(Nimbi.Text.dim)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: 4)
+                    if notch.ownedByMe {
+                        Button(notch.giveBackTitle) { notch.giveBack() }
+                            .buttonStyle(PillButtonStyle())
+                            .focusable(false)
+                    } else if NSScreen.islandScreen != nil {
+                        Button("Use for Tempo") { notch.take() }
+                            .buttonStyle(PillButtonStyle())
+                            .focusable(false)
+                    }
+                }
+                .padding(.leading, 26)
             }
             .padding(.horizontal, 10).padding(.vertical, 9)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -85,12 +100,7 @@ struct SettingsView: View {
         }
         .padding(.horizontal, 14).padding(.vertical, 13)
         .frame(width: 300 * look.textScale)
-        .onAppear { notchOwner = SurfaceClaim.owner(of: .notch) }
-    }
-
-    private var notchLine: String {
-        guard let owner = notchOwner else { return "Notch is free." }
-        return "Notch is used by \(Self.appName(owner))"
+        .onAppear { notch.reread() }
     }
 
     private var loginValue: String {
@@ -114,17 +124,6 @@ struct SettingsView: View {
             loginError = true
         }
         model.objectWillChange.send()
-    }
-
-    static func appName(_ bundleID: String) -> String {
-        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID),
-           let bundle = Bundle(url: url),
-           let name = bundle.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String
-            ?? bundle.object(forInfoDictionaryKey: "CFBundleName") as? String {
-            return name
-        }
-        let last = bundleID.split(separator: ".").last.map(String.init) ?? bundleID
-        return last.prefix(1).uppercased() + last.dropFirst()
     }
 }
 
