@@ -39,6 +39,11 @@ every nimbi app. The choices behind it are in [docs/design-choices.md](docs/desi
   ↩ turns white, and **Skip** (S) sits next to it. **Timer** hangs Tempo's panel from the island, and
   the menu bar glyph steps aside meanwhile. **Give it to Relay** hands the notch back. Either app's
   switch works live.
+- **Swiping between apps:** every nimbi app keeps its own island, and a swipe moves the notch between
+  them. A two-finger swipe, a drag, or ← → on the open island hands it to the next running app
+  (Relay, Skyline, Tempo), whose island opens with its page drifting in. ⌃⌥← and ⌃⌥→ do the same
+  from anywhere. Dots under the page, and tiny ones under the closed glance, show where you are; a
+  dot glows amber when that app needs you. Relay's notch is unchanged: a swipe over it works too.
 - The timer keeps absolute times, so a sleeping Mac or a relaunch never loses it. A phase that ended
   while the Mac slept counts at its real end.
 - Finished sessions are kept for 60 days in `~/Library/Application Support/Tempo/sessions.json`. Only

@@ -13,15 +13,20 @@ final class Hotkey {
         self.action = action
         var type = EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed))
         let me = Unmanaged.passUnretained(self).toOpaque()
-        InstallEventHandler(GetApplicationEventTarget(), { _, _, data in
-            guard let data else { return noErr }
+        InstallEventHandler(GetApplicationEventTarget(), { _, event, data in
+            // Only Tempo's own key: other hot keys (NimbiKit's ⌃⌥← →) go to their own handlers.
+            var id = EventHotKeyID()
+            GetEventParameter(event, EventParamName(kEventParamDirectObject), EventParamType(typeEventHotKeyID), nil,
+                              MemoryLayout<EventHotKeyID>.size, nil, &id)
+            guard let data, id.signature == Hotkey.signature else { return OSStatus(eventNotHandledErr) }
             let hotkey = Unmanaged<Hotkey>.fromOpaque(data).takeUnretainedValue()
             DispatchQueue.main.async { hotkey.action() }
             return noErr
         }, 1, &type, me, &handler)
-        let id = EventHotKeyID(signature: OSType(0x544D_504F), id: 1)   // 'TMPO'
+        let id = EventHotKeyID(signature: Hotkey.signature, id: 1)
         RegisterEventHotKey(keyCode, modifiers, id, GetApplicationEventTarget(), 0, &ref)
     }
 
     static let label = "⌃⌥P"
+    static let signature = OSType(0x544D_504F)   // 'TMPO'
 }

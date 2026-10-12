@@ -38,6 +38,14 @@ does, and **Give it to Relay** gives it back. The island window, its hover timin
 from it moved from Skyline into NimbiKit 0.6.0 (`NotchOwnership`, `NotchIsland`), so Tempo uses them
 instead of copying. The page's words come from `IslandPage` in TempoCore, which is tested.
 
+## Swiping between apps (12 Oct 2026)
+
+Prototype in the private artifact <https://claude.ai/artifact/Vne6C6ZHZYH4tvXYMJfrGg> (copy in
+[`notch-swipe.html`](notch-swipe.html)). The user's call: **every app keeps its own notch, and Relay's
+notch doesn't change.** So a swipe hands the notch to the next app (DESIGN.md 18.2a) instead of one
+app drawing every page (18.3). **Running apps only** are in the ring. The code is NimbiKit 0.7.0's
+`NotchRing` and `NotchIsland`; Tempo's page marks its cloud and text with `.islandDrift`.
+
 ## Not built yet
 
 - Notifications when the panel is closed and sounds are off. The amber dot and the cloud's mood carry it.

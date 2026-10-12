@@ -1,0 +1,303 @@
+<title>nimbi Notch Swipe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: the prototype first (a wallpaper strip with the notch, the island, dots), then the decisions as option cards, then the plan. nimbi is dark-only (DESIGN.md 4). */
+:root {
+  --page: #07070A; --panel: #141414; --line: rgba(255,255,255,.07); --rim: rgba(255,255,255,.09);
+  --text: #FFFFFF; --strong: rgba(255,255,255,.88); --dim: rgba(255,255,255,.62); --faint: rgba(255,255,255,.44);
+  --glow: #B07CFF; --amber: #F2B33D; --asking: #FFD426; --done: #30D158; --working: #0A84FF; --red: #FF6961; --rain: #7FD0FF;
+  --display: 'Fredoka', ui-rounded, system-ui, sans-serif;
+  --body: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--page); color: var(--text); font-family: var(--body); margin: 0; padding-inline: 20px; padding-block: 40px 90px; line-height: 1.5; }
+.wrap { max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 48px; }
+h1 { font-family: var(--display); font-weight: 600; font-size: clamp(32px, 5vw, 50px); letter-spacing: -.02em; margin: 0; line-height: 1.08; text-wrap: balance; }
+h2 { font-family: var(--display); font-weight: 500; font-size: 27px; margin: 0; }
+h3 { font-size: 15px; margin: 0; font-weight: 600; }
+p { margin: 0; color: var(--dim); max-width: 72ch; }
+.eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--faint); }
+.lead { font-size: 16.5px; color: var(--strong); }
+.intro, .dhead { display: flex; flex-direction: column; gap: 10px; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.seg { display: inline-flex; padding: 3px; border-radius: 99px; background: rgba(255,255,255,.07); gap: 2px; }
+.seg button { font: 500 12.5px var(--body); color: var(--strong); background: transparent; border: 0; border-radius: 99px; padding: 6px 12px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: #fff; color: #000; }
+.controls button:focus-visible, .proto:focus-visible { outline: 2px solid var(--glow); outline-offset: 2px; }
+.hint { font-size: 12.5px; color: var(--faint); }
+.proto { position: relative; border-radius: 20px; overflow: hidden; height: 330px; background: linear-gradient(135deg, #2B2345, #1B2A3F 60%, #3A2440); touch-action: pan-y; user-select: none; cursor: grab; }
+.proto:active { cursor: grabbing; }
+.proto canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.menubar { position: absolute; left: 0; right: 0; top: 0; height: 32px; background: rgba(20,20,28,.55); display: flex; justify-content: space-between; align-items: center; padding: 0 16px; font: 500 13px var(--body); color: rgba(255,255,255,.75); }
+.options { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
+.opt { display: flex; flex-direction: column; gap: 12px; padding: 16px; border-radius: 20px; border: 1px solid var(--line); background: rgba(255,255,255,.02); min-width: 0; }
+.opt.rec { border-color: rgba(242,179,61,.45); }
+.opt-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.rec-chip { font-size: 11px; font-weight: 600; padding: 2px 9px; border-radius: 99px; background: rgba(242,179,61,.14); color: var(--amber); }
+.pros { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--dim); }
+.pros li { padding-left: 18px; position: relative; }
+.pros li::before { position: absolute; left: 0; font-weight: 700; }
+.pros .good::before { content: "+"; color: var(--done); }
+.pros .bad::before { content: "–"; color: var(--red); }
+.plan { background: var(--panel); border: .75px solid var(--rim); border-radius: 16px; padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; }
+.plan ul { margin: 0; padding-left: 18px; color: var(--dim); font-size: 13.5px; display: flex; flex-direction: column; gap: 6px; max-width: 92ch; }
+.plan b { color: var(--strong); font-weight: 600; }
+kbd { font: 600 11px var(--body); padding: 1px 6px; border-radius: 5px; background: rgba(255,255,255,.11); color: rgba(255,255,255,.75); }
+@media (prefers-reduced-motion: reduce) { .proto { cursor: default; } }
+</style>
+
+<div class="wrap">
+  <header class="intro">
+    <div class="eyebrow">nimbi · the shared notch · swipe between apps · 12 Oct 2026</div>
+    <h1>Swipe the notch from app to app</h1>
+    <p class="lead">Today the notch belongs to one nimbi app at a time, and you move it with a button in each app's settings. With this change, the open island gets a page per running app (Relay, Skyline, Tempo). Swipe sideways with two fingers, drag it, or press ← → to move between them. The motion is Drift from DESIGN.md 18.8: pages move like clouds at different heights.</p>
+  </header>
+
+  <section class="dhead" aria-labelledby="h-proto">
+    <h2 id="h-proto">Try it</h2>
+    <p class="hint">Two-finger swipe, drag, or click the island and press ← →. Click a dot to jump.</p>
+  </section>
+  <div class="proto" id="proto" tabindex="0" role="region" aria-label="Notch island prototype: swipe between Relay, Skyline and Tempo">
+    <div class="menubar" aria-hidden="true"><span> Xcode&nbsp;&nbsp; File&nbsp;&nbsp; Edit</span><span>Mon 16:37</span></div>
+    <canvas id="stage" width="2400" height="660" aria-hidden="true"></canvas>
+  </div>
+  <p id="live" class="hint" aria-live="polite">Relay · 1 agent asking</p>
+
+  <section class="dhead"><div class="eyebrow">Decided</div><h2>Every app keeps its own notch</h2>
+    <p>A swipe hands the notch to the next app, which opens its own island right away with its content drifting in from the side. Relay's notch stays exactly as it is. Skyline and Tempo notice a two-finger swipe over Relay's island and hand the notch on; Relay already steps aside whenever another app takes the notch. Relay's island has no dots, because its code doesn't change.</p></section>
+
+  <section class="dhead"><div class="eyebrow">Decision</div><h2>Which apps get a page</h2></section>
+  <div class="options">
+    <article class="opt rec"><div class="opt-head"><h3>Running apps only</h3><span class="rec-chip">Recommended</span></div>
+      <ul class="pros"><li class="good">Every page is live and the swipe is instant.</li><li class="bad">A quit app drops out of the dots until you open it again.</li></ul></article>
+    <article class="opt"><div class="opt-head"><h3>Installed apps, launched on arrival</h3></div>
+      <ul class="pros"><li class="good">The dots always show the whole family you have.</li><li class="bad">Swiping to an app that isn't running waits a second or two while it launches, and it starts apps you'd closed.</li></ul></article>
+  </div>
+
+  <section class="plan" aria-labelledby="h-plan">
+    <h2 id="h-plan">The plan, either way</h2>
+    <ul>
+      <li><b>Gestures (DESIGN.md 18.6):</b> a two-finger swipe moves one page once it passes 46 pt, then locks until the gesture has been quiet for 220 ms. Dragging with the mouse follows the pointer with 30% resistance at the ends, and commits past 18% of the width or 0.45 pt/ms. Click the island, then ← → to step through pages. ⌃⌥← and ⌃⌥→ work from anywhere. Click a dot to jump, and esc closes.</li>
+      <li><b>Dots (18.7):</b> 12 pt from the bottom of the open island. The current page is a 16 × 6 white capsule and the others are 6 pt dots. An app that needs you on another page glows amber and pulses. The closed island shows 4 pt mini dots after the glance.</li>
+      <li><b>Urgency (18.5):</b> a page that needs you comes to the front only while the island is closed. A swipe beats data: after you swipe away, a page comes back by itself only if its urgency rises.</li>
+      <li><b>Relay, unchanged:</b> it's in the swipe while it's running and set to live at the notch. A swipe over its island is picked up by one of the other running nimbi apps, which hands the notch on. ⌃⌥← and ⌃⌥→ work while Relay has the notch too.</li>
+      <li><b>Not in this round:</b> a page that needs you jumping to the front by itself. That would move the notch without you asking (18.2). An amber dot on the closed island says so instead.</li>
+      <li>The buttons in settings stay, for picking the app that's at the notch when you start up.</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+(() => {
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const TAU = Math.PI * 2, N = 200;
+
+  // ---------- outlines: N points, clockwise from the top, unit space, y down ----------
+  const polar = f => Array.from({ length: 720 }, (_, i) => { const t = i / 720 * TAU; const r = f(t); return [r * Math.cos(t), r * Math.sin(t)]; });
+  const poly = (v, per = 40) => { const out = []; for (let i = 0; i < v.length; i++) { const a = v[i], b = v[(i + 1) % v.length]; for (let k = 0; k < per; k++) out.push([a[0] + (b[0] - a[0]) * k / per, a[1] + (b[1] - a[1]) * k / per]); } return out; };
+  const smooth = (pts, passes = 3) => { for (let s = 0; s < passes; s++) pts = pts.map((p, i) => { const a = pts[(i - 1 + pts.length) % pts.length], b = pts[(i + 1) % pts.length]; return [(a[0] + 2 * p[0] + b[0]) / 4, (a[1] + 2 * p[1] + b[1]) / 4]; }); return pts; };
+  function resample(pts, n = N) {
+    let a = 0; for (let i = 0; i < pts.length; i++) { const [x1, y1] = pts[i], [x2, y2] = pts[(i + 1) % pts.length]; a += x1 * y2 - x2 * y1; }
+    if (a < 0) pts = pts.slice().reverse();
+    let top = 0; pts.forEach((p, i) => { if (p[1] < pts[top][1] - 1e-6 || (Math.abs(p[1] - pts[top][1]) < 1e-6 && Math.abs(p[0]) < Math.abs(pts[top][0]))) top = i; });
+    pts = pts.slice(top).concat(pts.slice(0, top));
+    const L = [0]; for (let i = 1; i <= pts.length; i++) { const p = pts[i - 1], q = pts[i % pts.length]; L.push(L[i - 1] + Math.hypot(q[0] - p[0], q[1] - p[1])); }
+    const total = L[L.length - 1], out = []; let j = 0;
+    for (let k = 0; k < n; k++) { const d = k / n * total; while (L[j + 1] < d) j++; const p = pts[j], q = pts[(j + 1) % pts.length], f = (d - L[j]) / ((L[j + 1] - L[j]) || 1); out.push([p[0] + (q[0] - p[0]) * f, p[1] + (q[1] - p[1]) * f]); }
+    return out;
+  }
+  const cloudR = t => 0.93 + 0.043 * (2 * Math.pow(Math.abs(Math.cos(4 * t + 0.2)), 0.7) - 1) + 0.012 * Math.sin(2 * t + 1);
+  function crescent() {
+    const R = 0.84, r = 0.72, cx = 0.36, cy = -0.26, pts = [];
+    for (let i = 0; i < 720; i++) { const t = i / 720 * TAU, x = R * Math.cos(t), y = R * Math.sin(t); if (Math.hypot(x - cx, y - cy) >= r) pts.push([x, y, t]); }
+    let gap = 0; for (let i = 1; i < pts.length; i++) if (pts[i][2] - pts[i - 1][2] > 0.05) gap = i;
+    const arc = pts.slice(gap).concat(pts.slice(0, gap)).map(p => [p[0], p[1]]);
+    const a0 = arc[0], a1 = arc[arc.length - 1];
+    let t0 = Math.atan2(a1[1] - cy, a1[0] - cx), t1 = Math.atan2(a0[1] - cy, a0[0] - cx);
+    while (t1 > t0) t1 -= TAU;
+    const inner = []; for (let i = 0; i <= 160; i++) { const t = t0 + (t1 - t0) * i / 160; inner.push([cx + r * Math.cos(t), cy + r * Math.sin(t)]); }
+    return arc.concat(inner);
+  }
+  const F = {
+    cloud: { pts: resample(polar(cloudR)), face: [0.16, 0], eye: 1 },
+    orb: { pts: resample(polar(t => 0.8 + 0.012 * Math.cos(8 * t + 0.2))), face: [0.1, 0.02], eye: 0.92 },
+    puff: { pts: resample(polar(t => 0.9 + 0.08 * (2 * Math.pow(Math.abs(Math.cos(3 * t + 0.5)), 0.6) - 1))).map(([x, y]) => [x * 1.18, y * 0.88]), face: [0.16, 0.04], eye: 1 },
+    lounge: { pts: resample(polar(cloudR)).map(([x, y]) => [x * 1.42, y * 0.58 + 0.18]), face: [0.3, 0.2], eye: 0.86 },
+    burst: { pts: resample(polar(t => 0.92 + 0.12 * Math.pow(Math.abs(Math.cos(5 * t + 0.3)), 3))), face: [0.12, 0.02], eye: 1.06 },
+    hourglass: { pts: resample(smooth(poly([[-0.62, -0.92], [0.62, -0.92], [0.62, -0.74], [0.13, -0.1], [0.13, 0.1], [0.66, 0.74], [0.66, 0.92], [-0.66, 0.92], [-0.66, 0.74], [-0.13, 0.1], [-0.13, -0.1], [-0.62, -0.74]]), 4)), face: [0, 0.58], eye: 0.72 },
+    bell: { pts: resample(smooth(poly([[-0.1, -0.94], [0.1, -0.94], [0.13, -0.8], [0.44, -0.64], [0.6, -0.2], [0.64, 0.36], [0.9, 0.66], [0.9, 0.8], [-0.9, 0.8], [-0.9, 0.66], [-0.64, 0.36], [-0.6, -0.2], [-0.44, -0.64], [-0.13, -0.8]]), 4)), face: [0, 0.06], eye: 0.92 },
+    mug: { pts: resample(smooth(poly([[-0.66, -0.5], [0.44, -0.5], [0.44, -0.34], [0.82, -0.3], [0.92, 0.04], [0.8, 0.38], [0.44, 0.42], [0.44, 0.6], [0.26, 0.82], [-0.48, 0.82], [-0.66, 0.6]]), 4)), face: [-0.1, 0.14], eye: 0.92 },
+    moon: { pts: resample(smooth(crescent(), 3)), face: [-0.46, 0.12], eye: 0.8 },
+  };
+
+  // ---------- phases ----------
+  const PH = {
+    ready:  { name: 'Ready', glow: '#B07CFF', eyes: 'open', mark: null, hop: 0, A: 'cloud', B: 'cloud', ring: null },
+    focus:  { name: 'Focus', glow: '#6FC8FF', eyes: 'open', mark: null, hop: 0, A: 'orb', B: 'hourglass', ring: '#0A84FF' },
+    up:     { name: "Time's up", glow: '#FFD426', eyes: 'wide', mark: '!', hop: 0.06, A: 'burst', B: 'bell', ring: '#F2B33D' },
+    break:  { name: 'Short break', glow: '#FF9BE0', eyes: 'happy', mark: 'sparkle', hop: 0, A: 'puff', B: 'mug', ring: '#30D158' },
+    long:   { name: 'Long break', glow: '#8E86C9', eyes: 'closed', mark: 'zzz', hop: 0, A: 'lounge', B: 'moon', ring: '#30D158' },
+    paused: { name: 'Paused a while', glow: '#7D8BC4', eyes: 'sad', mark: 'tear', hop: 0, A: 'cloud', B: 'cloud', ring: '#0A84FF' },
+  };
+  const LEN = { ready: 2.4, focus: 10, up: 2.8, break: 5, long: 6, paused: 4 };
+  const MINUTES = { ready: 25, focus: 25, up: 0, break: 5, long: 15, paused: 25 };
+  const CYCLE = ['ready', 'focus', 'up', 'break', 'focus', 'up', 'long'];
+  let cycling = !reduce, ci = 0, phase = 'focus', tIn = 0;
+  const progress = () => phase === 'focus' || phase === 'break' || phase === 'long' ? Math.min(1, tIn / LEN[phase]) : phase === 'paused' ? 0.26 : phase === 'up' ? 1 : 0;
+  const clockText = () => { if (phase === 'up') return '00:00'; const total = MINUTES[phase] * 60, left = Math.round(total * (1 - progress())); return String(Math.floor(left / 60)).padStart(2, '0') + ':' + String(left % 60).padStart(2, '0'); };
+
+  // ---------- drawing ----------
+  const hex = h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+  const mix = (a, b, f) => a.map((v, i) => v + (b[i] - v) * f);
+  function pathOf(pts, cx, cy, s, sx = 1, sy = 1) { const p = new Path2D(); pts.forEach(([x, y], i) => { const px = cx + x * s * sx, py = cy + y * s * sy; i ? p.lineTo(px, py) : p.moveTo(px, py); }); p.closePath(); return p; }
+  function skin(ctx, path, cx, cy, s, glow, glowA) {
+    const g = glow.map(Math.round);
+    ctx.save(); ctx.shadowColor = `rgba(${g},${glowA})`; ctx.shadowBlur = s * 0.5;
+    const base = ctx.createLinearGradient(cx - s, cy + s, cx + s, cy - s);
+    base.addColorStop(0, '#7FD0FF'); base.addColorStop(0.5, '#B9B4FF'); base.addColorStop(1, '#F3B6EC');
+    ctx.fillStyle = base; ctx.fill(path); ctx.restore();
+    ctx.save(); ctx.clip(path);
+    const lay = (x, y, r, c0, c1) => { const rg = ctx.createRadialGradient(x, y, 0, x, y, r); rg.addColorStop(0, c0); rg.addColorStop(1, c1); ctx.fillStyle = rg; ctx.fillRect(cx - s * 2, cy - s * 2, s * 4, s * 4); };
+    lay(cx - s * 0.76, cy, s * 1.1, 'rgba(86,191,255,.9)', 'rgba(86,191,255,0)');
+    lay(cx + s * 0.7, cy - s * 0.76, s * 1.0, 'rgba(246,169,228,.85)', 'rgba(246,169,228,0)');
+    lay(cx - s * 0.12, cy + s * 0.24, s * 0.72, 'rgba(255,255,255,.95)', 'rgba(255,255,255,0)');
+    ctx.lineWidth = s * 0.1; ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.filter = `blur(${Math.max(1, s * 0.05)}px)`; ctx.stroke(path); ctx.filter = 'none';
+    ctx.restore();
+  }
+  function face(ctx, st, fx, fy, size, t) {
+    const ew = 0.06 * size * st.eye, eh = 0.09 * size * st.eye, gap = 0.095 * size * st.eye;
+    ctx.fillStyle = '#24163A'; ctx.strokeStyle = '#24163A'; ctx.lineCap = 'round'; ctx.lineWidth = size * 0.026;
+    [-1, 1].forEach(side => {
+      const x = fx + side * gap, y = fy + (side > 0 ? size * 0.01 : 0);
+      ctx.beginPath();
+      if (st.eyes === 'happy') { ctx.arc(x, y + eh * 0.3, ew * 0.95, Math.PI * 1.1, Math.PI * 1.9); ctx.stroke(); return; }
+      if (st.eyes === 'closed') { ctx.arc(x, y - eh * 0.2, ew * 0.95, Math.PI * 0.15, Math.PI * 0.85); ctx.stroke(); return; }
+      const w = st.eyes === 'wide' ? ew * 1.18 : ew, h = (st.eyes === 'wide' ? eh * 1.12 : st.eyes === 'sad' ? eh * 0.8 : eh) * st.blink;
+      ctx.ellipse(x, y, w, Math.max(h, size * 0.008), 0, 0, TAU); ctx.fill();
+      if (st.eyes === 'sad') { ctx.save(); ctx.lineWidth = size * 0.018; ctx.beginPath(); ctx.moveTo(x - side * ew * 1.2, y - eh * 1.25); ctx.lineTo(x + side * ew * 0.9, y - eh * 1.6); ctx.stroke(); ctx.restore(); }
+      if (st.blink > 0.5) { ctx.fillStyle = `rgba(255,255,255,${st.eyes === 'wide' ? 0.55 : 0.2})`; ctx.beginPath(); ctx.ellipse(x - w * 0.3, y - h * 0.4, w * 0.32, h * 0.22, 0, 0, TAU); ctx.fill(); ctx.fillStyle = '#24163A'; }
+    });
+  }
+  function marks(ctx, st, cx, cy, s, t) {
+    ctx.save();
+    if (st.mark === '!') { ctx.fillStyle = '#FFD426'; ctx.font = `700 ${s * 0.6}px ui-rounded, system-ui`; ctx.textAlign = 'center'; ctx.fillText('!', cx + s * 0.92, cy - s * 0.62 + Math.sin(t * 10) * s * 0.03); }
+    if (st.mark === 'zzz') { ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.textAlign = 'center'; for (let i = 0; i < 3; i++) { const k = ((t * 0.35 + i / 3) % 1); ctx.globalAlpha = Math.sin(k * Math.PI); ctx.font = `600 ${s * (0.18 + k * 0.16)}px ui-rounded, system-ui`; ctx.fillText('z', cx + s * (0.7 + k * 0.4), cy - s * (0.4 + k * 0.7)); } }
+    if (st.mark === 'sparkle') { ctx.fillStyle = '#FFE6F7'; for (let i = 0; i < 3; i++) { const a = t * 0.8 + i * 2.1, r = s * (0.18 - i * 0.04) * (0.6 + 0.4 * Math.abs(Math.sin(t * 3 + i))); const x = cx + Math.cos(a) * s * 1.15, y = cy + Math.sin(a) * s * 0.95; ctx.beginPath(); for (let k = 0; k < 8; k++) { const rr = k % 2 ? r * 0.3 : r, aa = k / 8 * TAU; ctx.lineTo(x + Math.cos(aa) * rr, y + Math.sin(aa) * rr); } ctx.fill(); } }
+    if (st.mark === 'tear') { ctx.fillStyle = 'rgba(127,208,255,.9)'; const y = cy + s * (0.14 + ((t * 0.4) % 1) * 0.3); ctx.beginPath(); ctx.ellipse(cx + s * 0.05, y, s * 0.035, s * 0.05, 0, 0, TAU); ctx.fill(); }
+    ctx.restore();
+  }
+
+
+  // ---------- the prototype ----------
+  const proto = document.getElementById('proto'), cv = document.getElementById('stage'), ctx = cv.getContext('2d'), live = document.getElementById('live');
+  let W = 0, H = 0, D = 1;
+  function fit() { const r = proto.getBoundingClientRect(); D = Math.min(2, devicePixelRatio || 1); W = r.width; H = r.height; cv.width = Math.round(W * D); cv.height = Math.round(H * D); }
+  fit(); addEventListener('resize', fit);
+  const PAGES = [
+    { id: 'relay', w: 610, h: 172, dots: false, say: 'Relay · 1 agent asking. Its own dashboard, unchanged, with no dots.' },
+    { id: 'skyline', w: 580, h: 192, dots: true, say: 'Skyline · 18° · clear sky' },
+    { id: 'tempo', w: 580, h: 192, dots: true, say: 'Tempo · Focus · 18 min left' },
+  ];
+  let pos = 0, vel = 0, target = 0, dragging = null, wheelAcc = 0, wheelLock = 0, wheelQuiet = 0, lastSaid = -1;
+  const clampT = t => Math.max(0, Math.min(PAGES.length - 1, t));
+  const go = t => { target = clampT(t); };
+  const lerp = (a, b, f) => a + (b - a) * f;
+  function islandSize() { const c = PAGES[Math.round(Math.max(0, Math.min(PAGES.length - 1, pos)))]; return [c.w, c.h]; }
+  function islandSizeBlend() { const i = Math.max(0, Math.min(PAGES.length - 1, Math.floor(pos))), j = Math.min(PAGES.length - 1, i + 1), f = Math.max(0, Math.min(1, pos - i)); return [lerp(PAGES[i].w, PAGES[j].w, f), lerp(PAGES[i].h, PAGES[j].h, f)]; }
+  function islandPath(cx, w, h, r, ear) { const x0 = cx - w / 2, x1 = cx + w / 2, p = new Path2D(); p.moveTo(x0 - ear, 0); p.quadraticCurveTo(x0, 0, x0, ear); p.lineTo(x0, h - r); p.quadraticCurveTo(x0, h, x0 + r, h); p.lineTo(x1 - r, h); p.quadraticCurveTo(x1, h, x1, h - r); p.lineTo(x1, ear); p.quadraticCurveTo(x1, 0, x1 + ear, 0); p.closePath(); return p; }
+  const font = (px, w = 500, fam = '-apple-system, system-ui') => `${w} ${px}px ${fam}`;
+  function key(x, y, label, light) { ctx.font = font(9.5, 600); const w = Math.max(17, ctx.measureText(label).width + 8); ctx.fillStyle = light ? 'rgba(0,0,0,.09)' : 'rgba(255,255,255,.11)'; ctx.beginPath(); ctx.roundRect(x, y - 8.5, w, 17, 5); ctx.fill(); ctx.fillStyle = light ? 'rgba(0,0,0,.5)' : 'rgba(255,255,255,.6)'; ctx.textAlign = 'center'; ctx.fillText(label, x + w / 2, y + .5); ctx.textAlign = 'left'; return w; }
+  function pill(x, y, label, k, light) { ctx.font = font(11.5); const tw = ctx.measureText(label).width; ctx.font = font(9.5, 600); const kw = Math.max(17, ctx.measureText(k).width + 8); const w = tw + kw + 26; ctx.fillStyle = light ? 'rgba(255,255,255,.94)' : 'rgba(255,255,255,.09)'; ctx.beginPath(); ctx.roundRect(x, y, w, 25, 12.5); ctx.fill(); ctx.fillStyle = light ? '#000' : 'rgba(255,255,255,.9)'; ctx.font = font(11.5); ctx.fillText(label, x + 11, y + 13); key(x + 17 + tw, y + 12.5, k, light); return w; }
+  function cloudAt(form, cx, cy, size, glow, eyes, t, mark) {
+    const r = size / 2, path = pathOf(F[form].pts, cx, cy, r); skin(ctx, path, cx, cy, r, hex(glow), .7);
+    if (form === 'hourglass') { ctx.save(); ctx.clip(path); ctx.fillStyle = 'rgba(36,22,58,.2)'; ctx.fillRect(cx - r, cy - r * .86, r * 2, r * .5); ctx.beginPath(); ctx.moveTo(cx - r * .6, cy + r * .86); ctx.quadraticCurveTo(cx, cy + r * .3, cx + r * .6, cy + r * .86); ctx.fill(); ctx.restore(); }
+    face(ctx, { eyes, eye: F[form].eye, blink: 1 }, cx + F[form].face[0] * r, cy + F[form].face[1] * r, size, t);
+    if (mark) marks(ctx, { mark }, cx, cy, r, t);
+  }
+  function ringAt(cx, cy, R, lw, color, left) { ctx.save(); ctx.lineCap = 'round'; ctx.lineWidth = lw; ctx.strokeStyle = 'rgba(255,255,255,.1)'; ctx.beginPath(); ctx.arc(cx, cy, R, 0, TAU); ctx.stroke(); ctx.strokeStyle = color; ctx.beginPath(); ctx.arc(cx, cy, R, -Math.PI / 2, -Math.PI / 2 + TAU * left); ctx.stroke(); ctx.restore(); }
+  // Drift (DESIGN.md 18.8): the page, its cloud and its text move at different heights.
+  function drift(o, w) { const a = Math.abs(o); return { page: o * .55 * w, alpha: Math.max(0, 1 - 1.15 * a), cloud: o * .5 * w, cloudY: -10 * a, cloudS: 1 - .18 * a, text: o * .15 * w }; }
+  function pageText(x, y, name, title, sub) { ctx.textBaseline = 'middle'; ctx.fillStyle = 'rgba(255,255,255,.38)'; ctx.font = font(11, 400, 'ui-monospace, Menlo, monospace'); ctx.fillText(name, x, y - 52); ctx.fillStyle = '#fff'; ctx.font = font(24, 600); ctx.fillText(title, x, y - 28); ctx.fillStyle = 'rgba(255,255,255,.55)'; ctx.font = font(13, 400); ctx.fillText(sub, x, y - 2); }
+  function drawPage(p, o, cx, top, w, t) {
+    const d = drift(o, w), x0 = cx - w / 2 + d.page, mid = top + 32 + 80;
+    ctx.save(); ctx.globalAlpha = d.alpha;
+    if (p.id === 'relay') {
+      // Relay's own dashboard, as it is today: buttons either side of the notch, the mascot with its news, a chip per agent.
+      const by = top + 16; ctx.fillStyle = 'rgba(255,255,255,.09)';
+      [[x0 + 30, 'cloud'], [x0 + 62, 'tray'], [x0 + w - 30, 'more'], [x0 + w - 62, 'home'], [x0 + w - 94, 'mic']].forEach(([x, k]) => { ctx.beginPath(); ctx.arc(x, by, 12, 0, TAU); ctx.fill(); });
+      cloudAt('cloud', x0 + 30, by, 16, '#FFD426', 'wide', t);
+      ctx.beginPath(); ctx.roundRect(x0 + 82, by - 10, 56, 20, 10); ctx.fill();
+      ['#FFD426', '#0A84FF', '#30D158'].forEach((c, i) => { ctx.fillStyle = c; ctx.beginPath(); ctx.arc(x0 + 96 + i * 14, by, 3.5, 0, TAU); ctx.fill(); });
+      ctx.save(); ctx.translate(d.cloud - d.page, d.cloudY); cloudAt('cloud', x0 + 60 + 0, top + 78 + 14, 56 * d.cloudS, '#FFD426', 'wide', t, '!'); ctx.restore();
+      ctx.save(); ctx.translate(d.text - d.page, 0); ctx.textBaseline = 'middle'; ctx.fillStyle = '#fff'; ctx.font = font(15, 600); ctx.fillText('claude-5 is asking', x0 + 104, top + 72); ctx.fillStyle = 'rgba(255,255,255,.6)'; ctx.font = font(12.5, 400); ctx.fillText('Freeze time, or widen the window?', x0 + 104, top + 92); ctx.fillText('2 working · 1 done', x0 + 104, top + 110);
+      [['api-server', '#0A84FF'], ['docs', '#30D158'], ['claude-5', '#FFD426']].forEach(([n, c], i) => { const x = x0 + 104 + i * 118; ctx.fillStyle = 'rgba(255,255,255,.07)'; ctx.beginPath(); ctx.roundRect(x, top + 128, 110, 24, 12); ctx.fill(); ctx.fillStyle = c; ctx.beginPath(); ctx.arc(x + 13, top + 140, 4, 0, TAU); ctx.fill(); ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.font = font(11.5); ctx.fillText(n, x + 24, top + 140.5); });
+      ctx.restore();
+    } else {
+      const isSky = p.id === 'skyline';
+      ctx.save(); ctx.translate(d.cloud - d.page, d.cloudY);
+      if (isSky) { ctx.fillStyle = '#fff'; for (let i = 0; i < 6; i++) { ctx.globalAlpha = d.alpha * (.35 + .5 * Math.abs(Math.sin(t * 1.3 + i))); ctx.beginPath(); ctx.arc(x0 + 30 + (i * 37) % 90, top + 50 + (i * 23) % 70, 1.3, 0, TAU); ctx.fill(); } ctx.globalAlpha = d.alpha; }
+      cloudAt(isSky ? 'cloud' : 'hourglass', x0 + 74, mid, 92 * d.cloudS, isSky ? '#8E86C9' : '#6FC8FF', isSky ? 'closed' : 'open', t, isSky ? 'zzz' : null);
+      ctx.restore();
+      ctx.save(); ctx.translate(d.text - d.page, 0);
+      const tx = x0 + 140;
+      if (isSky) { pageText(tx, mid, 'SKYLINE', '18° · clear sky', 'Dry for 12 hours · air moderate'); const w1 = pill(tx, mid + 16, 'Forecast', '↩'); pill(tx + w1 + 6, mid + 16, 'Place', 'L');
+        const bx = x0 + w - 28 - 132; [3.6, 3.3, 3, 2.7, 2.4, 2.1, 1.9, 1.6, 1.4, 1.2, 1, .8].forEach((v, i) => { ctx.fillStyle = 'rgba(255,255,255,.5)'; ctx.beginPath(); ctx.roundRect(bx + i * 11 + 1.5, mid + 24 - v * 14, 8, v * 14, 2); ctx.fill(); });
+        ctx.fillStyle = 'rgba(255,255,255,.38)'; ctx.font = font(9, 400); ctx.fillText('now', bx, mid + 36); ctx.textAlign = 'center'; ctx.fillText('+6h', bx + 66, mid + 36); ctx.textAlign = 'right'; ctx.fillText('+12h', bx + 132, mid + 36); ctx.textAlign = 'left'; }
+      else { pageText(tx, mid, 'TEMPO', 'Focus · 18 min left', 'Release notes · until 16:55'); const w1 = pill(tx, mid + 16, 'Pause', 'space'); pill(tx + w1 + 6, mid + 16, 'Timer', '↩');
+        const rx = x0 + w - 28 - 66; ringAt(rx, mid - 6, 42, 6, '#0A84FF', .72); ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.font = font(20, 600); ctx.fillText('18′', rx, mid - 6); ctx.fillStyle = 'rgba(255,255,255,.4)'; ctx.font = font(10, 400); ctx.fillText('2 of 4', rx, mid + 50); ctx.textAlign = 'left'; }
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+  function frame(t, dt) {
+    if (!dragging) { const f = 190 * (target - pos) - 22.5 * vel; vel += f * dt; pos += vel * dt; if (reduce) { pos = target; vel = 0; } }
+    if (wheelLock && performance.now() - wheelQuiet > 220) { wheelLock = 0; wheelAcc = 0; }
+    ctx.setTransform(D, 0, 0, D, 0, 0); ctx.clearRect(0, 0, W, H);
+    const [w, h] = islandSize(), cx = W / 2, sc = Math.min(1, (W - 24) / (w + 20));
+    ctx.save(); ctx.translate(cx, 0); ctx.scale(sc, sc); ctx.translate(-cx, 0);
+    const shape = islandPath(cx, w, h, 30, 7); ctx.fillStyle = '#000'; ctx.fill(shape);
+    ctx.save(); ctx.clip(shape);
+    // One app draws at a time: its page drifts out, then the next app's island takes over and its page drifts in.
+    const cur = Math.round(Math.max(0, Math.min(PAGES.length - 1, pos)));
+    drawPage(PAGES[cur], cur - pos, cx, 0, w, t);
+    ctx.restore();
+    ctx.fillStyle = '#05050a'; ctx.beginPath(); ctx.roundRect(cx - 92, 0, 184, 30, 10); ctx.fill();
+    // Dots: drawn by Skyline and Tempo on their own islands; Relay's island has none.
+    const near = Math.round(Math.max(0, Math.min(PAGES.length - 1, pos)));
+    const dotsA = PAGES[cur].dots ? 1 : 0;
+    if (dotsA > 0.01) { ctx.save(); ctx.globalAlpha = Math.min(1, dotsA); const y = h - 12, total = PAGES.length * 6 + (PAGES.length - 1) * 6 + 10; let x = cx - total / 2;
+      PAGES.forEach((p, i) => { const on = Math.max(0, 1 - Math.abs(i - pos)), wd = 6 + 10 * on; ctx.fillStyle = `rgba(255,255,255,${.28 + .72 * on})`; ctx.beginPath(); ctx.roundRect(x, y - 3, wd, 6, 3); ctx.fill(); dotHits[i] = [x * sc + cx * (1 - sc), (x + wd) * sc + cx * (1 - sc), y * sc]; x += wd + 6; }); ctx.restore(); } else dotHits.length = 0;
+    ctx.restore();
+    if (near !== lastSaid && Math.abs(pos - near) < .05) { lastSaid = near; live.textContent = PAGES[near].say; }
+  }
+  const dotHits = [];
+  // Pointer drag: follows with 30% resistance past the ends; commits past 18% of the width or 0.45 pt/ms.
+  proto.addEventListener('pointerdown', e => {
+    const r = proto.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+    const hit = dotHits.findIndex(d => d && x >= d[0] - 4 && x <= d[1] + 4 && Math.abs(y - d[2]) < 10);
+    if (hit >= 0) { go(hit); return; }
+    proto.setPointerCapture(e.pointerId); dragging = { x: e.clientX, start: pos, t: performance.now(), lastX: e.clientX, lastT: performance.now(), v: 0 }; vel = 0;
+  });
+  proto.addEventListener('pointermove', e => {
+    if (!dragging) return; const w = islandSize()[0] * .55, now = performance.now();
+    let p = dragging.start - (e.clientX - dragging.x) / w; if (p < 0) p *= .3; if (p > PAGES.length - 1) p = PAGES.length - 1 + (p - PAGES.length + 1) * .3; pos = p;
+    dragging.v = (e.clientX - dragging.lastX) / Math.max(1, now - dragging.lastT); dragging.lastX = e.clientX; dragging.lastT = now;
+  });
+  const release = () => { if (!dragging) return; const moved = pos - dragging.start, w = islandSize()[0]; let t = Math.round(dragging.start);
+    if (Math.abs(moved) * .55 * w > .18 * w || Math.abs(dragging.v) > .45) t = dragging.start + (moved > 0 || dragging.v < -.45 ? 1 : -1);
+    go(Math.round(t)); vel = -dragging.v * 1000 / (.55 * w); dragging = null; };
+  proto.addEventListener('pointerup', release); proto.addEventListener('pointercancel', release);
+  // Two-finger swipe: past 46 pt, one page; then quiet for 220 ms before the next.
+  proto.addEventListener('wheel', e => {
+    if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return; e.preventDefault(); wheelQuiet = performance.now();
+    if (wheelLock) return; wheelAcc += e.deltaX; if (Math.abs(wheelAcc) > 46) { go(Math.round(target) + (wheelAcc > 0 ? 1 : -1)); wheelLock = 1; wheelAcc = 0; }
+  }, { passive: false });
+  proto.addEventListener('keydown', e => { if (e.key === 'ArrowRight') { go(Math.round(target) + 1); e.preventDefault(); } if (e.key === 'ArrowLeft') { go(Math.round(target) - 1); e.preventDefault(); } });
+  let last = performance.now(), clock = 0;
+  function loop(now) { const dt = Math.min(.033, (now - last) / 1000); last = now; clock += dt; if (!document.hidden) frame(clock, dt); requestAnimationFrame(loop); }
+  requestAnimationFrame(loop);
+})();
+</script>

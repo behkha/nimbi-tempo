@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import NimbiKit
 import SwiftUI
 import TempoCore
@@ -10,6 +11,7 @@ import TempoCore
 final class TempoIsland {
     let island: NotchIsland
     private let model: TempoModel
+    private var bag: Set<AnyCancellable> = []
 
     /// Timer ↩: Tempo's panel, hanging from the island.
     var onOpenPanel: (() -> Void)?
@@ -22,6 +24,13 @@ final class TempoIsland {
                              open: { _ in OpenIsland(model: model, act: { act($0) }) })
         act = { [weak self] action in self?.perform(action) }
         island.onKey = { [weak self] code in self?.key(code) ?? false }
+        // The other apps' islands show Tempo's dot amber while time is up and waits for you.
+        model.objectWillChange.receive(on: RunLoop.main).sink { [weak self] _ in
+            DispatchQueue.main.async {
+                guard let self else { return }
+                self.island.setNeedsYou(self.model.mood.urgency == .needsYou)
+            }
+        }.store(in: &bag)
     }
 
     private func perform(_ action: IslandPage.Action) {
@@ -111,6 +120,7 @@ private struct OpenIsland: View {
         HStack(alignment: .center, spacing: 18) {
             NimbiCloud(size: 92, mood: mood.mood, working: mood.working, form: mood.form, progress: mood.progress)
                 .frame(width: 92, height: 92)
+                .islandDrift(.cloud)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 4) {
                 Text("TEMPO")
@@ -142,6 +152,7 @@ private struct OpenIsland: View {
                 }
                 .padding(.top, 6)
             }
+            .islandDrift(.text)
             Spacer(minLength: 0)
             VStack(spacing: 6) {
                 ZStack {
@@ -157,6 +168,7 @@ private struct OpenIsland: View {
                     .foregroundStyle(Nimbi.Text.faint)
             }
             .frame(width: 132)
+            .islandDrift(.text)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel("\(TimeText.spoken(model.remaining)), session \(page.caption)")
         }
