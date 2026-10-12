@@ -1,0 +1,14 @@
+{
+  "pins" : [
+    {
+      "identity" : "nimbi-kit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/behkha/nimbi-kit.git",
+      "state" : {
+        "revision" : "a7be6af49cf922d64c996d2888ccb9fe7cf48450",
+        "version" : "0.6.0"
+      }
+    }
+  ],
+  "version" : 2
+}
